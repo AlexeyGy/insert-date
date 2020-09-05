@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"syscall"
 	"time"
 	"unsafe"
@@ -49,12 +50,26 @@ type MSG struct {
 	POINT  struct{ X, Y int64 }
 }
 
+type keyboardInput struct {
+	wVk         uint16
+	wScan       uint16
+	dwFlags     uint32
+	time        uint32
+	dwExtraInfo uint64
+}
+
+type input struct {
+	inputType uint32
+	ki        keyboardInput
+	padding   uint64
+}
+
 func main() {
 
 	// from https://stackoverflow.com/questions/38646794/implement-a-global-hotkey-in-golang/
 	user32 := syscall.MustLoadDLL("user32")
 	defer user32.Release()
-
+	sendInputProc := user32.MustFindProc("SendInput")
 	reghotkey := user32.MustFindProc("RegisterHotKey")
 
 	// Hotkeys to listen to:
@@ -90,6 +105,28 @@ func main() {
 			}
 			if id == 4 {
 				fmt.Println(time.Now().Format(time.RFC3339))
+
+				// send input
+				var i input
+				i.inputType = 1 //INPUT_KEYBOARD https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-input
+				i.ki.wVk = 0x41 // virtual key code for a
+				i.ki.time = 0
+
+				// https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-sendinput
+				ret, _, err := sendInputProc.Call(
+					uintptr(1),
+					uintptr(unsafe.Pointer(&i)),
+					uintptr(unsafe.Sizeof(i)),
+				)
+				log.Printf("ret: %v error: %v", ret, err)
+
+				// Release the "..." key https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-keybd_event
+				i.ki.dwFlags = 0x0002 // KEYEVENTF_KEYUP for key release
+				ret, _, err = sendInputProc.Call(
+					uintptr(1),
+					uintptr(unsafe.Pointer(&i)),
+					uintptr(unsafe.Sizeof(i)))
+				log.Printf("ret: %v error: %v", ret, err)
 			}
 		}
 
