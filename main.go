@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"log"
+	"strings"
 	"syscall"
 	"time"
 	"unsafe"
@@ -16,8 +16,17 @@ const (
 	ModWin
 )
 
+// HOTKEYS to listen to
+var HOTKEYS = map[int16]*Hotkey{
+	// 1: &Hotkey{1, ModAlt + ModCtrl, 'O'},  // ALT+CTRL+O
+	// 2: &Hotkey{2, ModAlt + ModShift, 'M'}, // ALT+SHIFT+M
+	// 3: &Hotkey{3, ModAlt + ModCtrl, 'X'},  // ALT+CTRL+X Example of other keys
+	4: &Hotkey{4, ModAlt + ModCtrl, 'D'}, // WIN + /
+}
+
+//Hotkey ..
 type Hotkey struct {
-	Id        int // Unique id
+	ID        int // Unique id
 	Modifiers int // Mask of modifiers
 	KeyCode   int // Key code, e.g. 'A'
 }
@@ -38,9 +47,10 @@ func (h *Hotkey) String() string {
 	if h.Modifiers&ModWin != 0 {
 		mod.WriteString("Win+")
 	}
-	return fmt.Sprintf("Hotkey[Id: %d, %s%c]", h.Id, mod, h.KeyCode)
+	return fmt.Sprintf("Hotkey[Id: %d, %s%c]", h.ID, mod, h.KeyCode)
 }
 
+// MSG...
 type MSG struct {
 	HWND   uintptr
 	UINT   uintptr
@@ -50,46 +60,13 @@ type MSG struct {
 	POINT  struct{ X, Y int64 }
 }
 
-type keyboardInput struct {
-	wVk         uint16
-	wScan       uint16
-	dwFlags     uint32
-	time        uint32
-	dwExtraInfo uint64
-}
-
-type input struct {
-	inputType uint32
-	ki        keyboardInput
-	padding   uint64
-}
-
 func main() {
 
 	// from https://stackoverflow.com/questions/38646794/implement-a-global-hotkey-in-golang/
 	user32 := syscall.MustLoadDLL("user32")
 	defer user32.Release()
-	sendInputProc := user32.MustFindProc("SendInput")
-	reghotkey := user32.MustFindProc("RegisterHotKey")
 
-	// Hotkeys to listen to:
-	keys := map[int16]*Hotkey{
-		1: &Hotkey{1, ModAlt + ModCtrl, 'O'},  // ALT+CTRL+O
-		2: &Hotkey{2, ModAlt + ModShift, 'M'}, // ALT+SHIFT+M
-		3: &Hotkey{3, ModAlt + ModCtrl, 'X'},  // ALT+CTRL+X
-		4: &Hotkey{4, ModAlt + ModCtrl, 'D'},  // WIN + /
-	}
-
-	// Register hotkeys:
-	for _, v := range keys {
-		r1, _, err := reghotkey.Call(
-			0, uintptr(v.Id), uintptr(v.Modifiers), uintptr(v.KeyCode))
-		if r1 == 1 {
-			fmt.Println("Registered", v)
-		} else {
-			fmt.Println("Failed to register", v, ", error:", err)
-		}
-	}
+	registerHotkeys(user32)
 	getmsg := user32.MustFindProc("GetMessageW")
 
 	for {
@@ -98,37 +75,24 @@ func main() {
 
 		// Registered id is in the WPARAM field:
 		if id := msg.WPARAM; id != 0 {
-			fmt.Println("Hotkey pressed:", keys[id])
-			if id == 3 { // CTRL+ALT+X = Exit
-				fmt.Println("CTRL+ALT+X pressed, goodbye...")
-				return
-			}
-			if id == 4 {
-				fmt.Println(time.Now().Format(time.RFC3339))
-
-				// send input
-				var i input
-				i.inputType = 1 //INPUT_KEYBOARD https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-input
-				i.ki.wVk = 0x41 // virtual key code for a
-				i.ki.time = 0
-
-				// https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-sendinput
-				ret, _, err := sendInputProc.Call(
-					uintptr(1),
-					uintptr(unsafe.Pointer(&i)),
-					uintptr(unsafe.Sizeof(i)),
-				)
-				log.Printf("ret: %v error: %v", ret, err)
-
-				// Release the "..." key https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-keybd_event
-				i.ki.dwFlags = 0x0002 // KEYEVENTF_KEYUP for key release
-				ret, _, err = sendInputProc.Call(
-					uintptr(1),
-					uintptr(unsafe.Pointer(&i)),
-					uintptr(unsafe.Sizeof(i)))
-				log.Printf("ret: %v error: %v", ret, err)
-			}
+			fmt.Println("Hotkey pressed:", HOTKEYS[id])
+			PrintCharacter(strings.ToUpper(time.Now().Format("January 02, Mon")))
 		}
+	}
+}
 
+func registerHotkeys(user32 *syscall.DLL) {
+
+	reghotkey := user32.MustFindProc("RegisterHotKey")
+
+	// Register hotkeys:
+	for _, v := range HOTKEYS {
+		r1, _, err := reghotkey.Call(
+			0, uintptr(v.ID), uintptr(v.Modifiers), uintptr(v.KeyCode))
+		if r1 == 1 {
+			fmt.Println("Registered", v)
+		} else {
+			fmt.Println("Failed to register", v, ", error:", err)
+		}
 	}
 }
