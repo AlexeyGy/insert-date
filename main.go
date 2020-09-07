@@ -76,7 +76,7 @@ func main() {
 		// Registered id is in the WPARAM field:
 		if id := msg.WPARAM; id != 0 {
 			fmt.Println("Hotkey pressed:", HOTKEYS[id])
-			PrintCharacter(strings.ToUpper(time.Now().Format("January 02, Mon")))
+			PrintCharacters(strings.ToUpper(time.Now().Format("January 02, Mon")))
 		}
 	}
 }

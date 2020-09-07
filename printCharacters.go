@@ -26,7 +26,7 @@ type input struct {
 }
 
 // PrintCharacter ...
-func PrintCharacter(toPrint string) {
+func PrintCharacters(toPrint string) {
 
 	for i := 0; i < len(toPrint); i++ {
 		toPass := []input{}
