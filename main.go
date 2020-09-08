@@ -50,7 +50,7 @@ func (h *Hotkey) String() string {
 	return fmt.Sprintf("Hotkey[Id: %d, %s%c]", h.ID, mod, h.KeyCode)
 }
 
-// MSG...
+// MSG see https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-msg
 type MSG struct {
 	HWND   uintptr
 	UINT   uintptr
@@ -69,6 +69,8 @@ func main() {
 	registerHotkeys(user32)
 	getmsg := user32.MustFindProc("GetMessageW")
 
+	sendInputProc := user32.MustFindProc("SendInput")
+
 	for {
 		var msg = &MSG{}
 		getmsg.Call(uintptr(unsafe.Pointer(msg)), 0, 0, 0, 1)
@@ -76,7 +78,7 @@ func main() {
 		// Registered id is in the WPARAM field:
 		if id := msg.WPARAM; id != 0 {
 			fmt.Println("Hotkey pressed:", HOTKEYS[id])
-			PrintCharacters(strings.ToUpper(time.Now().Format("January 02, Mon")))
+			PrintCharacters(sendInputProc, strings.ToUpper(time.Now().Format("2006-01-02")))
 		}
 	}
 }

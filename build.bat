@@ -1,1 +1,1 @@
-go build -ldflags -H=windowsgui
+go build -o dist/ -ldflags -H=windowsgui

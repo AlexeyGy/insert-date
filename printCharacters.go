@@ -6,11 +6,6 @@ import (
 	"unsafe"
 )
 
-var (
-	u32           = syscall.NewLazyDLL("user32.dll")
-	sendInputProc = u32.NewProc("SendInput")
-)
-
 type keyboardInput struct {
 	wVk         uint16
 	wScan       uint16
@@ -26,7 +21,7 @@ type input struct {
 }
 
 // PrintCharacter ...
-func PrintCharacters(toPrint string) {
+func PrintCharacters(sendInputProc *syscall.Proc, toPrint string) {
 
 	for i := 0; i < len(toPrint); i++ {
 		toPass := []input{}
@@ -57,7 +52,6 @@ func PrintCharacters(toPrint string) {
 			uintptr(unsafe.Sizeof(ctrlKeyUp)),
 		)
 		if err != nil {
-
 			log.Printf("ret: %v error: %v", ret, err)
 		}
 	}
