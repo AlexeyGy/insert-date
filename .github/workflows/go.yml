@@ -42,7 +42,3 @@ jobs:
       with:
         name: insert_date_exe
         path: dist/insert-date.exe
-    - name: Go Release Binary
-      # You may pin to the exact commit or the version.
-      # uses: ngs/go-release.action@a32a23d081d503245410d9d7bf59b722b50cc766
-      uses: ngs/go-release.action@v1.0.2
