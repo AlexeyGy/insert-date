@@ -20,7 +20,8 @@ type input struct {
 	padding   uint64
 }
 
-// PrintCharacter ...
+// PrintCharacters handles the output to the current window,
+// CTRL and ALT are sent because they are pressed down when the user issues the shortcut
 func PrintCharacters(sendInputProc *syscall.Proc, toPrint string) {
 
 	for i := 0; i < len(toPrint); i++ {

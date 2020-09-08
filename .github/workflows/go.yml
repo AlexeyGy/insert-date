@@ -21,7 +21,13 @@ jobs:
 
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
+      
+    - name: get bindata converter
+      run: go get -u github.com/go-bindata/go-bindata/...
 
+    - name: convert icon into asset
+      run: go-bindata images/
+      
     - name: Build
       run: go build -v .
 

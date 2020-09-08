@@ -7,6 +7,8 @@ import (
 	"syscall"
 	"time"
 	"unsafe"
+
+	"github.com/getlantern/systray"
 )
 
 const (
@@ -18,10 +20,7 @@ const (
 
 // HOTKEYS to listen to
 var HOTKEYS = map[int16]*Hotkey{
-	// 1: &Hotkey{1, ModAlt + ModCtrl, 'O'},  // ALT+CTRL+O
-	// 2: &Hotkey{2, ModAlt + ModShift, 'M'}, // ALT+SHIFT+M
-	// 3: &Hotkey{3, ModAlt + ModCtrl, 'X'},  // ALT+CTRL+X Example of other keys
-	4: &Hotkey{4, ModAlt + ModCtrl, 'D'}, // WIN + /
+	1: &Hotkey{4, ModAlt + ModCtrl, 'D'}, // WIN + /
 }
 
 //Hotkey ..
@@ -61,7 +60,52 @@ type MSG struct {
 }
 
 func main() {
+	systray.Run(onReady, func() {})
+}
 
+func registerHotkeys(user32 *syscall.DLL) {
+
+	reghotkey := user32.MustFindProc("RegisterHotKey")
+
+	// Register hotkeys:
+	for _, v := range HOTKEYS {
+		r1, _, err := reghotkey.Call(
+			0, uintptr(v.ID), uintptr(v.Modifiers), uintptr(v.KeyCode))
+		if r1 == 1 {
+			fmt.Println("Registered", v)
+		} else {
+			fmt.Println("Failed to register", v, ", error:", err)
+		}
+	}
+}
+
+func setupSystray() {
+	data, err := Asset("images/bitmap.ico")
+	if err != nil {
+		fmt.Println("Icon reading error", err)
+		return
+	}
+
+	systray.SetTemplateIcon(data, data)
+
+	systray.SetTitle("Insert Date")
+	systray.SetTooltip("Insert the current date (Hotkey CTRL+ALT+D)")
+	mQuitOrig := systray.AddMenuItem("Quit", "Quit the whole app")
+	go func() {
+		<-mQuitOrig.ClickedCh
+		fmt.Println("Requesting quit")
+		systray.Quit()
+		fmt.Println("Finished quitting")
+	}()
+}
+
+func onReady() {
+	setupSystray()
+	run()
+
+}
+
+func run() {
 	// from https://stackoverflow.com/questions/38646794/implement-a-global-hotkey-in-golang/
 	user32 := syscall.MustLoadDLL("user32")
 	defer user32.Release()
@@ -79,22 +123,6 @@ func main() {
 		if id := msg.WPARAM; id != 0 {
 			fmt.Println("Hotkey pressed:", HOTKEYS[id])
 			PrintCharacters(sendInputProc, strings.ToUpper(time.Now().Format("2006-01-02")))
-		}
-	}
-}
-
-func registerHotkeys(user32 *syscall.DLL) {
-
-	reghotkey := user32.MustFindProc("RegisterHotKey")
-
-	// Register hotkeys:
-	for _, v := range HOTKEYS {
-		r1, _, err := reghotkey.Call(
-			0, uintptr(v.ID), uintptr(v.Modifiers), uintptr(v.KeyCode))
-		if r1 == 1 {
-			fmt.Println("Registered", v)
-		} else {
-			fmt.Println("Failed to register", v, ", error:", err)
 		}
 	}
 }
