@@ -32,7 +32,7 @@ jobs:
       run: go-bindata images/
       
     - name: Build
-      run: go build -v .
+      run: go build -o dist/ -ldflags -H=windowsgui
 
     - name: Test
       run: go test -v .
@@ -41,4 +41,4 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: insert_date_exe
-        path: insert-date.exe
+        path: dist/insert-date.exe
