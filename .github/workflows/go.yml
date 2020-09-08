@@ -42,3 +42,8 @@ jobs:
       with:
         name: insert_date_exe
         path: dist/insert-date.exe
+  
+    - name: GitHub Releases
+      # You may pin to the exact commit or the version.
+      # uses: fnkr/github-action-ghr@96b1448dc6162f370067e1de51e856e733a76b4f
+      uses: fnkr/github-action-ghr@v1.3
