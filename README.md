@@ -1,3 +1,4 @@
+![Go](https://github.com/AlexeyGy/insert-date/workflows/Go/badge.svg)
 # insert-date
 
 A slim Go application for Windows that lets you insert the current date (ISO8601) into any text. E.g., 2020-01-20
