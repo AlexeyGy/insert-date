@@ -32,7 +32,7 @@ jobs:
       run: go-bindata images/
       
     - name: Build
-      run: go build -v . -ldflags -H=windowsgui 
+      run: go build -v .
 
     - name: Test
       run: go test -v .
